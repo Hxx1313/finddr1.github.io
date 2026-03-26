@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智慧代診推薦系統（綠色系＋說帖欄＋匯出Excel＋備註＋院所精準比對）</title>
+
+  <!-- XLSX -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- ✅ 可搜尋下拉（Tom Select） -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css">
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+  <style>
+    :root{
+      --green-700:#1f6f5b;
+      --green-600:#2a8a70;
+      --green-500:#39a785;
+      --green-200:#cfeee3;
+      --green-100:#e9f7f2;
+
+      --ink:#1f2937;
+      --muted:#7b8a8f;
+      --bg:#f2faf7;
+      --card:#ffffff;
+      --line:#d8ebe5;
+      --shadow: 0 4px 10px rgba(0,0,0,0.06);
+    }
+
+    *{ box-sizing: border-box; }
+    body{
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    .page{
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .sidebar{
+      position: sticky;
+      top: 18px;
+      align-self: start;
+    }
+
+    .side-card{
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .side-header{
+      padding: 14px 14px 10px;
+      background: linear-gradient(180deg, var(--green-100), #fff);
+      border-bottom: 1px solid var(--line);
+    }
+    .side-title{
+      margin: 0;
+      font-size: 16px;
+      font-weight: 900;
+      color: #145a49;
+    }
+    .side-sub{
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .side-body{
+      padding: 12px 14px 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .script-block{
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fbfffe;
+    }
+    .script-top{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .script-name{
+      font-size: 13px;
+      font-weight: 900;
+      color: #1a6b56;
+    }
+    .mini-btn{
+      border: 1px solid var(--line);
+      background: var(--green-100);
+      color: #155e4c;
+      font-weight: 900;
+      border-radius: 10px;
+      padding: 6px 10px;
+      cursor: pointer;
+      transition: .15s;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .mini-btn:hover{ background: #dcf4ec; }
+    .mini-btn:active{ transform: translateY(1px); }
+
+    textarea{
+      width: 100%;
+      min-height: 120px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      padding: 10px;
+      font-size: 13px;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+      background: #ffffff;
+    }
+    textarea:focus{
+      border-color: #a7e3d2;
+      box-shadow: 0 0 0 4px rgba(57,167,133,.12);
+    }
+
+    .toast{
+      display:none;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #e9f7f2;
+      border: 1px solid #cfeee3;
+      color: #1a6b56;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .main h2{
+      text-align: center;
+      margin: 6px 0 14px;
+      color: #145a49;
+    }
+
+    .control-panel{
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .row{ display: flex; gap: 15px; }
+    .col{ flex: 1; }
+
+    .form-group{ margin-bottom: 14px; }
+    label{
+      display:block;
+      font-weight: 900;
+      margin-bottom: 6px;
+      color:#1a6b56;
+      font-size: 14px;
+    }
+    select, input[type="file"]{
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #fff;
+      outline: none;
+    }
+    select:focus, input[type="file"]:focus{
+      border-color: #a7e3d2;
+      box-shadow: 0 0 0 4px rgba(57,167,133,.12);
+    }
+
+    .checkbox-group{ display:flex; gap:14px; align-items:center; padding: 8px 0; flex-wrap: wrap; }
+    .checkbox-group label{
+      display:flex; align-items:center; gap: 6px;
+      font-weight: 800; margin:0; cursor:pointer; font-size: 15px; color:#2b3a3f;
+    }
+    .checkbox-group input[type="checkbox"]{ width:18px; height:18px; cursor:pointer; accent-color: var(--green-600); }
+
+    .btn{
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: 900;
+      background: linear-gradient(180deg, var(--green-500), var(--green-600));
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: .2s;
+      margin-top: 10px;
+      box-shadow: 0 6px 16px rgba(57,167,133,.22);
+    }
+    .btn:hover{ filter: brightness(0.98); }
+    .btn:active{ transform: translateY(1px); }
+
+    .btn-secondary{
+      width: 100%;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 900;
+      background: #e9f7f2;
+      color: #145a49;
+      border: 1px solid #cfeee3;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: .2s;
+      margin-top: 10px;
+    }
+    .btn-secondary:hover{ background:#dcf4ec; }
+    .btn-secondary:active{ transform: translateY(1px); }
+
+    .debug-msg{
+      background: #fff7d6;
+      color: #8a6d1a;
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      font-size: 14px;
+      border: 1px solid #ffe9a8;
+      display:none;
+    }
+
+    .logic-note{
+      background: #fbfffe;
+      border: 1px dashed #cfeee3;
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #7b8a8f;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-top: 10px;
+    }
+
+    .result-list{ list-style: none; padding:0; margin:0; }
+    .result-item{
+      background: var(--card);
+      border: 1px solid var(--line);
+      margin-bottom: 10px;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      display:flex;
+      align-items:flex-start;
+      border-left: 6px solid var(--green-500);
+      gap: 12px;
+    }
+    .rank-badge{
+      background: #1a6b56;
+      color:#fff;
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight: 900;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .doctor-info{ flex-grow:1; min-width:0; }
+    .doctor-name{
+      font-weight: 900;
+      font-size: 18px;
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+    .title-badge{
+      background: #e9f7f2;
+      color: #1a6b56;
+      border: 1px solid #cfeee3;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .pill{
+      display:inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #f2fbf7;
+      border: 1px solid #d8ebe5;
+      color: #1f6f5b;
+      font-weight: 900;
+    }
+    .details{
+      font-size: 13px;
+      color: #718085;
+      margin-top: 6px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .right-col{
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-end;
+      min-width: 240px;
+    }
+
+    .status-badge{
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 13px;
+      white-space: nowrap;
+      border: 1px solid var(--line);
+      background: #fbfffe;
+      color: #4b5a60;
+      text-align:right;
+    }
+    .status-1{ background:#e9f7f2; color:#1a6b56; border-color:#cfeee3; }
+    .status-2{ background:#f2fbf7; color:#2a8a70; border-color:#d8ebe5; }
+    .status-3{ background:#fbfffe; color:#6c7a80; border-color:#e6f3ef; }
+
+    .schedule-chip{
+      display:inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      margin-right: 6px;
+      margin-top: 4px;
+      border: 1px solid var(--line);
+      background: #fbfffe;
+      color: #4b5a60;
+      font-weight: 900;
+    }
+    .chip-free{ background:#e9f7f2; color:#1a6b56; border-color:#cfeee3; }
+    .chip-busy{ background:#fbfffe; color:#6c7a80; border-color:#e6f3ef; }
+
+    .note-box{
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fbfffe;
+    }
+    .note-box label{
+      font-size: 12px;
+      margin-bottom: 6px;
+      color: #1a6b56;
+      font-weight: 900;
+    }
+    .note-input{
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 13px;
+      outline: none;
+      background:#fff;
+    }
+    .note-input:focus{
+      border-color: #a7e3d2;
+      box-shadow: 0 0 0 4px rgba(57,167,133,.12);
+    }
+
+    .muted{ color:#7b8a8f; font-size: 13px; line-height: 1.5; }
+
+    /* Tom Select */
+    .ts-wrapper.single .ts-control,
+    .ts-wrapper.multi .ts-control{
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      font-size: 16px;
+    }
+    .ts-control .item{
+      border-radius: 999px !important;
+      background: #e9f7f2 !important;
+      border: 1px solid #cfeee3 !important;
+      color: #1a6b56 !important;
+      font-weight: 900 !important;
+    }
+    .ts-dropdown{ border-radius: 12px; border: 1px solid var(--line); overflow:hidden; }
+    .ts-dropdown .active{ background: #e9f7f2 !important; }
+
+    @media (max-width: 980px){
+      .page{ grid-template-columns: 1fr; }
+      .sidebar{ position: static; }
+      .right-col{ min-width: 0; align-items: stretch; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <!-- 左側說帖欄 -->
+    <aside class="sidebar">
+      <div class="side-card">
+        <div class="side-header">
+          <h3 class="side-title">🗣️ 說帖欄</h3>
+          <p class="side-sub">可直接改文字後一鍵複製（不會複製標題）。</p>
+        </div>
+
+        <div class="side-body">
+          <div class="script-block">
+            <div class="script-top">
+              <div class="script-name">說帖1</div>
+              <button class="mini-btn" onclick="copyScript('script1')">複製</button>
+            </div>
+            <textarea id="script1">醫師好~我是醫管組○○ :) 抱歉打擾您
+因○○○醫師 3/15(日)及3/29(日)的早午晚診皆請假，不知能否請您協助代診呢? 代一診也可以喔~</textarea>
+          </div>
+
+          <div class="script-block">
+            <div class="script-top">
+              <div class="script-name">說帖2</div>
+              <button class="mini-btn" onclick="copyScript('script2')">複製</button>
+            </div>
+            <textarea id="script2">醫師好~我是醫管組○○ :) 抱歉打擾您
+因○○○醫師3/29(日)的早診請假，不知能否請您協助代診呢?</textarea>
+          </div>
+
+          <div id="toast" class="toast"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 主內容 -->
+    <main class="main">
+      <h2>🔄 智慧代診推薦系統（指定排序＋距離自動補算）</h2>
+
+      <div class="control-panel">
+        <div class="form-group">
+          <label>1. 需代診院所</label>
+          <select id="targetHospital"></select>
+        </div>
+
+        <div class="row">
+          <div class="form-group col">
+            <label>2. 需代診星期</label>
+            <select id="targetDay">
+              <option value="一">星期一</option>
+              <option value="二">星期二</option>
+              <option value="三">星期三</option>
+              <option value="四">星期四</option>
+              <option value="五">星期五</option>
+              <option value="六">星期六</option>
+              <option value="日">星期日</option>
+            </select>
+          </div>
+
+          <div class="form-group col">
+            <label>3. 需代診時段 (可複選)</label>
+            <div class="checkbox-group">
+              <label><input type="checkbox" name="targetShift" value="早" checked> 早診</label>
+              <label><input type="checkbox" name="targetShift" value="午"> 午診</label>
+              <label><input type="checkbox" name="targetShift" value="晚"> 晚診</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>4. 職稱（可搜尋下拉，可複選）</label>
+          <select id="titleFilter" multiple placeholder="請選擇職稱...">
+            <option value="代訓">代訓</option>
+            <option value="主訓">主訓</option>
+            <option value="空白">空白</option>
+            <option value="執業">執業</option>
+            <option value="副院長">副院長</option>
+            <option value="院長">院長</option>
+          </select>
+          <div class="muted">不選＝不限制職稱（全部列入）；選了＝只顯示符合所選職稱的醫師。</div>
+        </div>
+
+        <div class="form-group">
+          <label>5. 匯入醫師行蹤表 (Excel / CSV)</label>
+          <input type="file" id="excelFile" accept=".xlsx, .xls, .csv">
+        </div>
+
+        <div class="logic-note">
+          <div><strong style="color:#7b8a8f;">空診尋找邏輯（優先順序）</strong></div>
+          <div>• 先排除：所選星期＋所選時段中，只要任一時段已有排診/文字（非空白）即不列入。</div>
+          <div>• 若為「全天」（早+午+晚全勾選）：優先判斷外圍空檔：</div>
+          <div>　① 前一日整天無診 + 後一日整天無診（最優先）</div>
+          <div>　② 前一日晚無診 + 後一日早無診（次優先）</div>
+          <div>　③ 其餘（僅確保當日全天可代診）</div>
+          <div>• 若非全天：以「所選時段區塊」前後連續空檔診數（多→少）優先。</div>
+
+          <div style="margin-top:8px;"><strong style="color:#7b8a8f;">排序邏輯（由優到劣）</strong></div>
+          <div>① 空診外圍優先等級（全天）或 前後連空診數（非全天）</div>
+          <div>② 職稱：代/主訓 → 空白 → 執業 → 副院長 → 院長</div>
+          <div>③ 院所距離：近 → 遠（系統會自動用地址補算座標）</div>
+        </div>
+
+        <button class="btn" onclick="processData()">產生代診推薦名單</button>
+
+        <button id="exportBtn" class="btn-secondary" onclick="exportResultsToExcel()" disabled>
+          📤 匯出推薦名單 Excel
+        </button>
+        <div class="muted">提示：先產生名單後才能匯出；每位醫師的「小備註」也會一起匯出。</div>
+      </div>
+
+      <div id="debugArea" class="debug-msg"></div>
+      <ul id="resultList" class="result-list"></ul>
+    </main>
+  </div>
+
+  <script>
+    // =========================
+    // 全域：存最後一次推薦結果（匯出用）
+    // =========================
+    let lastResults = [];
+
+    // =========================
+    // 院所資料（完整清單）
+    // =========================
+    const hospitals = [
+      { name: '風澤中醫診所', address: '桃園市桃園區中山路428號1樓', lat: 24.995, lng: 121.305 },
+      { name: '內壢風澤中醫診所', address: '桃園市中壢區環中東路149號', lat: 24.965, lng: 121.255 },
+      { name: '大竹風澤中醫診所', address: '桃園市蘆竹區大竹路426-5號', lat: 25.018, lng: 121.258 },
+      { name: '南崁風澤中醫診所', address: '桃園市蘆竹區中正路355號', lat: 25.045, lng: 121.295 },
+      { name: '寶山風澤中醫診所', address: '桃園市桃園區寶山街207號', lat: 25.010, lng: 121.318 },
+      { name: '中壢風澤中醫診所', address: '桃園市中壢區延平路517號', lat: 24.958, lng: 121.223 },
+      { name: '蘆山風澤中醫診所', address: '桃園市蘆竹區中山路56-1號', lat: 25.048, lng: 121.296 },
+      { name: '埔心風澤中醫診所', address: '桃園市楊梅區永美路334號', lat: 24.915, lng: 121.185 },
+      { name: '八德風澤中醫診所', address: '桃園市八德區福國北街100號', lat: 24.965, lng: 121.295 },
+      { name: '平鎮風澤中醫診所', address: '桃園市平鎮區延平路二段65號', lat: 24.945, lng: 121.215 },
+      { name: '楊梅風澤中醫診所', address: '桃園市楊梅區大成路106號', lat: 24.908, lng: 121.145 },
+      { name: '大業風澤中醫診所', address: '桃園市桃園區大業路一段428號1樓', lat: 25.008, lng: 121.320 },
+      { name: '龜山風澤中醫診所', address: '桃園市龜山區萬壽路二段982號1樓', lat: 24.995, lng: 121.345 },
+      { name: '藝文風澤中醫診所', address: '桃園市桃園區中正路1126號', lat: 25.015, lng: 121.300 },
+      { name: '站前內壢風澤中醫診所', address: '桃園市中壢區福德路15號', lat: 24.972, lng: 121.258 },
+      { name: '龍安風澤中醫診所', address: '桃園市桃園區龍安街157號', lat: 24.985, lng: 121.285 },
+      { name: '青埔風澤中醫診所', address: '桃園市大園區公園路一段80號', lat: 25.015, lng: 121.215 },
+      { name: '龜山文學風澤中醫診所', address: '桃園市龜山區文學路255號1-2樓', lat: 25.045, lng: 121.375 },
+      { name: '青溪風澤中醫診所', address: '桃園市桃園區中山東路105號', lat: 24.995, lng: 121.315 },
+      { name: '桃鶯風澤中醫診所', address: '桃園市桃園區大豐路96號', lat: 24.982, lng: 121.325 },
+      { name: '楊梅大成風澤中醫診所', address: '桃園市楊梅區大成路56號1樓', lat: 24.907, lng: 121.146 },
+      { name: '南竹風澤中醫診所', address: '桃園市蘆竹區南竹路五段168號', lat: 25.035, lng: 121.275 },
+      { name: '武陵風澤中醫診所', address: '桃園市桃園區吉昌街245號', lat: 24.990, lng: 121.295 },
+      { name: '八德仁德風澤中醫診所', address: '桃園市八德區仁德二路11號', lat: 24.945, lng: 121.285 },
+      { name: '北大風澤中醫診所', address: '新北市三峽區大學路98號', lat: 24.940, lng: 121.375 },
+      { name: '中壢海華風澤中醫診所', address: '桃園市中壢區新生路309號', lat: 24.965, lng: 121.225 },
+      { name: '小檜溪風澤中醫診所', address: '桃園市桃園區民光東路361、363號', lat: 25.005, lng: 121.315 },
+      { name: '林口風澤中醫診所', address: '新北市林口區文化三路二段146號', lat: 25.075, lng: 121.375 },
+      { name: '湖口風澤中醫診所', address: '新竹縣湖口鄉中正路一段23號', lat: 24.905, lng: 121.045 },
+      { name: '大墩風澤中醫診所', address: '台中市南屯區大墩路153號', lat: 24.145, lng: 120.648 },
+      { name: '板橋板樹風澤中醫診所', address: '新北市板橋區溪崑二街43號1樓', lat: 25.015, lng: 121.430 },
+      { name: '大里風澤中醫診所', address: '台中市大里區中興路二段113-1號', lat: 24.105, lng: 120.685 },
+      { name: '土城風澤中醫診所', address: '新北市土城區裕民路191號', lat: 24.985, lng: 121.445 },
+      { name: '新竹風澤中醫診所', address: '新竹市東區民族路157號', lat: 24.808, lng: 120.975 },
+      { name: '南勢日和中醫診所', address: '桃園市平鎮區中豐路南勢二段56號', lat: 24.915, lng: 121.210 },
+      { name: '板新風澤中醫診所', address: '新北市板橋區中山路2段64號', lat: 25.018, lng: 121.470 },
+      { name: '中壢仁美中醫診所', address: '桃園市中壢區中山東路三段162號', lat: 24.945, lng: 121.250 },
+      { name: '新莊光華風澤中醫診所', address: '新北市新莊區龍安路503號', lat: 25.020, lng: 121.415 },
+      { name: '汐止風澤中醫診所', address: '新北市汐止區康寧街482之8號1樓及490號1樓', lat: 25.068, lng: 121.640 },
+      { name: '福科風澤中醫診所', address: '台中市西屯區安和路182-6號', lat: 24.180, lng: 120.620 },
+      { name: '中路正光中醫診所', address: '桃園市桃園區正光路503、505號', lat: 24.995, lng: 121.290 },
+      { name: '青埔領航中醫診所', address: '桃園市大園區領航北路四段312號', lat: 25.020, lng: 121.218 },
+      { name: '桃園永安中醫診所', address: '桃園市桃園區永安路300號1樓', lat: 25.002, lng: 121.305 },
+      { name: '竹北成功風澤中醫診所', address: '新竹縣竹北市成功二街176號1-2樓', lat: 24.815, lng: 121.025 },
+      { name: '永和風澤中醫診所', address: '新北市永和區竹林路125-1號1樓', lat: 25.012, lng: 121.518 },
+      { name: '三重風澤中醫診所', address: '新北市三重區重新路三段22號1F', lat: 25.060, lng: 121.495 },
+      { name: '中和連城風澤中醫診所', address: '新北市中和區連城路350號1F、352號1F', lat: 24.995, lng: 121.485 },
+      { name: '鶯歌風澤中醫診所', address: '新北市鶯歌區國慶街152號1樓', lat: 24.955, lng: 121.355 },
+      { name: '新豐風澤中醫診所', address: '新竹縣新豐鄉新興路139號1樓', lat: 24.870, lng: 120.985 },
+      { name: '內壢莊敬中醫診所', address: '桃園市中壢區莊敬路202號1樓', lat: 24.975, lng: 121.258 },
+      { name: '竹科風澤中醫診所', address: '新竹市東區光復路一段371號1樓', lat: 24.785, lng: 121.018 }
+    ];
+
+    const days = ['一', '二', '三', '四', '五', '六', '日'];
+    const shifts = ['早', '午', '晚'];
+
+    // =========================
+    // Tom Select
+    // =========================
+    let titleFilterSelect = null;
+
+    window.onload = function() {
+      const hospSel = document.getElementById('targetHospital');
+      hospitals.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = h.name;
+        opt.text = h.name;
+        hospSel.appendChild(opt);
+      });
+
+      titleFilterSelect = new TomSelect('#titleFilter', {
+        plugins: ['remove_button'],
+        create: false,
+        maxOptions: 1000,
+        placeholder: '請選擇職稱...',
+        searchField: ['text', 'value'],
+      });
+    };
+
+    // =========================
+    // Sidebar copy
+    // =========================
+    async function copyScript(textareaId){
+      const ta = document.getElementById(textareaId);
+      const text = (ta?.value || "").trim();
+      if(!text){ showToast("沒有內容可複製。"); return; }
+      try{ await navigator.clipboard.writeText(text); showToast("已複製到剪貼簿 ✅"); }
+      catch(e){ ta.select(); document.execCommand('copy'); showToast("已複製到剪貼簿 ✅"); }
+    }
+    function showToast(msg){
+      const t = document.getElementById('toast');
+      t.style.display = 'block';
+      t.textContent = msg;
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(()=>{ t.style.display='none'; }, 1800);
+    }
+
+    // =========================
+    // Debug
+    // =========================
+    function showDebug(msg) {
+      const debugArea = document.getElementById('debugArea');
+      debugArea.style.display = 'block';
+      debugArea.innerHTML = "<strong>💡 系統提示：</strong> " + msg;
+    }
+
+    // =========================
+    // ✅ 院所精準比對（修正：避免「蘆山」被誤配成「風澤中醫診所」）
+    // =========================
+    function normName(s){
+      return String(s || '')
+        .trim()
+        .replace(/\s+/g, '')
+        .replace(/[()（）]/g, '');
+    }
+
+    function getHospitalData(name) {
+      const n = normName(name);
+      if (!n) return { address: '', lat: null, lng: null };
+
+      // 1) 完全相等優先
+      const exact = hospitals.find(h => normName(h.name) === n);
+      if (exact) return exact;
+
+      // 2) 互相包含，取「最長匹配」避免泛稱吃掉精準名稱
+      const candidates = hospitals
+        .map(h => {
+          const hn = normName(h.name);
+          const hit = hn.includes(n) || n.includes(hn);
+          const score = hit ? Math.min(hn.length, n.length) : -1;
+          return { h, hit, score };
+        })
+        .filter(x => x.hit)
+        .sort((a, b) => b.score - a.score);
+
+      return candidates.length ? candidates[0].h : { address: '', lat: null, lng: null };
+    }
+
+    function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+      if (!Number.isFinite(lat1) || !Number.isFinite(lon1) || !Number.isFinite(lat2) || !Number.isFinite(lon2)) return Infinity;
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a =
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    // 職稱排序
+    function getTitlePriorityRank(titleRaw) {
+      const t = (titleRaw || '').trim();
+      if (t.includes('代訓')) return 1;
+      if (t.includes('主訓')) return 1;
+      if (t === '') return 2;
+      if (t.includes('執業') || t.includes('主治')) return 3;
+      if (t.includes('副院長')) return 4;
+      if (t.includes('院長')) return 5;
+      return 3;
+    }
+
+    function getDayStatus(row, shiftIndices, dayChar) {
+      const st = {};
+      shifts.forEach(s => {
+        const idx = shiftIndices[dayChar + s];
+        const cell = (idx !== undefined && idx < row.length) ? String(row[idx]).trim() : '';
+        st[s] = { busy: cell !== '', text: cell };
+      });
+      return st;
+    }
+
+    function dayAllFree(dayStatus) {
+      return shifts.every(s => !dayStatus[s].busy);
+    }
+
+    function buildDayChips(dayChar, st) {
+      const chips = shifts.map(s => {
+        const free = !st[s].busy;
+        const cls = free ? 'schedule-chip chip-free' : 'schedule-chip chip-busy';
+        const txt = free ? `${s} 空` : `${s} 忙`;
+        return `<span class="${cls}">${txt}</span>`;
+      }).join('');
+      return `星期${dayChar}：${chips}`;
+    }
+
+    // =========================
+    // 距離自動補算（OSM Nominatim：免 key，快取 + 節流）
+    // =========================
+    const GEO_CACHE_KEY = "fz_geo_cache_v1";
+    function loadGeoCache() { try { return JSON.parse(localStorage.getItem(GEO_CACHE_KEY) || "{}"); } catch { return {}; } }
+    function saveGeoCache(cache) { try { localStorage.setItem(GEO_CACHE_KEY, JSON.stringify(cache)); } catch {} }
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    async function geocodeAddress(address) {
+      const addr = (address || "").trim();
+      if (!addr) return null;
+
+      const cache = loadGeoCache();
+      if (cache[addr]) return cache[addr];
+
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addr)}`;
+      const resp = await fetch(url, { headers: { "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.7" } });
+      if (!resp.ok) return null;
+
+      const json = await resp.json();
+      if (!Array.isArray(json) || json.length === 0) return null;
+
+      const lat = Number(json[0].lat);
+      const lng = Number(json[0].lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+      const result = { lat, lng };
+      cache[addr] = result;
+      saveGeoCache(cache);
+      return result;
+    }
+
+    async function ensureLatLngByAddressFallback(primary) {
+      let lat = primary.lat, lng = primary.lng;
+
+      if ((!Number.isFinite(lat) || !Number.isFinite(lng)) && primary.address) {
+        await sleep(120);
+        const geo = await geocodeAddress(primary.address);
+        if (geo) { lat = geo.lat; lng = geo.lng; }
+      }
+      if ((!Number.isFinite(lat) || !Number.isFinite(lng)) && primary.nameLike) {
+        await sleep(120);
+        const geo2 = await geocodeAddress(primary.nameLike);
+        if (geo2) { lat = geo2.lat; lng = geo2.lng; }
+      }
+      return { lat, lng };
+    }
+
+    // =========================
+    // 備註：即時存入 lastResults
+    // =========================
+    function updateDoctorNote(idx, value){
+      if (!lastResults[idx]) return;
+      lastResults[idx].note = value;
+    }
+
+    // =========================
+    // Main
+    // =========================
+    function processData() {
+      const selectedShifts = Array.from(document.querySelectorAll('input[name="targetShift"]:checked')).map(cb => cb.value);
+      if (selectedShifts.length === 0) { alert('請至少勾選一個代診時段！'); return; }
+
+      const fileInput = document.getElementById('excelFile');
+      if (!fileInput.files.length) { alert('請先上傳行蹤表檔案！'); return; }
+
+      document.getElementById('debugArea').style.display = 'none';
+      document.getElementById('resultList').innerHTML = '';
+      document.getElementById('exportBtn').disabled = true;
+      lastResults = [];
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: "" });
+          await analyzeData(rawData, selectedShifts);
+        } catch (err) {
+          showDebug("讀取檔案失敗。(" + err.message + ")");
+        }
+      };
+      reader.readAsArrayBuffer(fileInput.files[0]);
+    }
+
+    async function analyzeData(rawData, selectedShifts) {
+      const targetHospName = document.getElementById('targetHospital').value;
+      const targetDay = document.getElementById('targetDay').value;
+
+      const targetHospData = getHospitalData(targetHospName);
+      const targetCity = targetHospData.address ? targetHospData.address.substring(0, 3) : '';
+      const selectedTitleFilters = (titleFilterSelect ? titleFilterSelect.getValue() : []);
+      const fullDayRequested = (selectedShifts.length === 3 && selectedShifts.includes('早') && selectedShifts.includes('午') && selectedShifts.includes('晚'));
+
+      // 找表頭
+      let headerRowIndex = -1;
+      let headers = [];
+      for (let i = 0; i < Math.min(10, rawData.length); i++) {
+        const row = rawData[i].map(c => String(c).trim());
+        const rowText = row.join('');
+        if ((rowText.includes('姓名') || rowText.includes('醫師')) && rowText.includes('早')) {
+          headerRowIndex = i;
+          headers = row;
+          break;
+        }
+      }
+      if (headerRowIndex === -1) { showDebug("找不到包含「姓名」與班表的標題列。"); return; }
+
+      const findColIdx = (keywords) => headers.findIndex(h => keywords.some(kw => String(h).includes(kw)));
+      const nameIdx = findColIdx(['姓名', '醫師', '醫生']);
+      const titleIdx = findColIdx(['職稱', '職位']);
+      const regHospIdx = findColIdx(['院區', '院所', '所屬', '執登']);
+      const firstShiftIdx = headers.findIndex(h => h === '早' || h === '早診');
+      if (nameIdx === -1 || firstShiftIdx === -1) { showDebug("無法對齊欄位，找不到姓名或第一個早診的位置。"); return; }
+
+      // shiftIndices
+      const shiftIndices = {};
+      let currentIdx = firstShiftIdx;
+      days.forEach(d => { shifts.forEach(s => { shiftIndices[d + s] = currentIdx; currentIdx++; }); });
+
+      const dayIndex = days.indexOf(targetDay);
+      const prevDay = days[(dayIndex - 1 + 7) % 7];
+      const nextDay = days[(dayIndex + 1) % 7];
+
+      // target 座標
+      const tgtLL = await ensureLatLngByAddressFallback({
+        lat: targetHospData.lat,
+        lng: targetHospData.lng,
+        address: targetHospData.address,
+        nameLike: targetHospName
+      });
+      const tgtLat = tgtLL.lat;
+      const tgtLng = tgtLL.lng;
+
+      let availableDoctors = [];
+      const dataRows = rawData.slice(headerRowIndex + 1);
+
+      for (const row of dataRows) {
+        const docName = String(row[nameIdx] ?? '').trim();
+        if (!docName) continue;
+
+        // 排除：目標日＋所選時段，任何一格有字就排除
+        let hasConflict = false;
+        for (let s of selectedShifts) {
+          const idx = shiftIndices[targetDay + s];
+          const cell = (idx !== undefined && idx < row.length) ? String(row[idx]).trim() : '';
+          if (cell !== '') { hasConflict = true; break; }
+        }
+        if (hasConflict) continue;
+
+        // 院所/同縣市
+        const docRegHosp = String(row[regHospIdx] ?? '').trim();
+        const regHospData = getHospitalData(docRegHosp);
+        const docCity = regHospData.address ? regHospData.address.substring(0, 3) : '';
+        if (targetCity && docCity && targetCity !== docCity) continue;
+
+        // 職稱
+        const docTitleRaw = String(row[titleIdx] ?? '').trim();
+
+        // 職稱篩選（不選＝不限制）
+        if (selectedTitleFilters.length > 0) {
+          const hit = selectedTitleFilters.some(t => {
+            if (t === '空白') return docTitleRaw.trim() === '';
+            return docTitleRaw.includes(t);
+          });
+          if (!hit) continue;
+        }
+
+        // 距離補算
+        const regLL = await ensureLatLngByAddressFallback({
+          lat: regHospData.lat,
+          lng: regHospData.lng,
+          address: regHospData.address,
+          nameLike: docRegHosp
+        });
+        const distance = getDistanceFromLatLonInKm(tgtLat, tgtLng, regLL.lat, regLL.lng);
+
+        // 班表（前/當/後）
+        const statusPrev = getDayStatus(row, shiftIndices, prevDay);
+        const statusToday = getDayStatus(row, shiftIndices, targetDay);
+        const statusNext = getDayStatus(row, shiftIndices, nextDay);
+
+        // 顯示：需求時段
+        const requestedStatusText = selectedShifts.map(s => `${s}診：空`).join('、');
+
+        // 非全天：前後連空診數
+        const flat = [];
+        days.forEach(d => {
+          shifts.forEach(s => {
+            const idx = shiftIndices[d + s];
+            const val = (idx !== undefined && idx < row.length) ? String(row[idx]).trim() : '';
+            flat.push(val !== '' ? 1 : 0);
+          });
+        });
+
+        const shiftIndexes = selectedShifts.map(s => shifts.indexOf(s));
+        const minShiftIndex = Math.min(...shiftIndexes);
+        const maxShiftIndex = Math.max(...shiftIndexes);
+        const startFlatIndex = dayIndex * 3 + minShiftIndex;
+        const endFlatIndex = dayIndex * 3 + maxShiftIndex;
+
+        let outsideEmptyCount = 0;
+        for (let i = startFlatIndex - 1; i >= 0; i--) { if (flat[i] === 0) outsideEmptyCount++; else break; }
+        for (let i = endFlatIndex + 1; i < 21; i++) { if (flat[i] === 0) outsideEmptyCount++; else break; }
+
+        const outsideText = outsideEmptyCount > 0 ? `時段外連續空檔 ${outsideEmptyCount} 診` : `前後皆緊湊排診`;
+
+        // 全天：外圍等級
+        let surroundLevel = 1;
+        if (fullDayRequested) {
+          if (dayAllFree(statusPrev) && dayAllFree(statusNext)) surroundLevel = 3;
+          else if (!statusPrev['晚'].busy && !statusNext['早'].busy) surroundLevel = 2;
+          else surroundLevel = 1;
+        }
+
+        const titleRank = getTitlePriorityRank(docTitleRaw);
+
+        availableDoctors.push({
+          name: docName,
+          title: docTitleRaw || '（空白）',
+          regHospital: docRegHosp || '未知',
+          distance,
+          distanceText: (distance === Infinity ? '距離暫無法計算' : `${distance.toFixed(1)} km`),
+
+          requestedStatusText,
+          prevChipsHTML: buildDayChips(prevDay, statusPrev),
+          todayChipsHTML: buildDayChips(targetDay, statusToday),
+          nextChipsHTML: buildDayChips(nextDay, statusNext),
+
+          fullDayRequested,
+          surroundLevel,
+          outsideEmptyCount,
+          outsideText,
+          titleRank,
+
+          note: ""
+        });
+      }
+
+      // 指定排序
+      availableDoctors.sort((a, b) => {
+        if (a.fullDayRequested) {
+          if (a.surroundLevel !== b.surroundLevel) return b.surroundLevel - a.surroundLevel;
+        } else {
+          if (a.outsideEmptyCount !== b.outsideEmptyCount) return b.outsideEmptyCount - a.outsideEmptyCount;
+        }
+        if (a.titleRank !== b.titleRank) return a.titleRank - b.titleRank;
+
+        const ad = a.distance, bd = b.distance;
+        const aInf = (ad === Infinity || !Number.isFinite(ad));
+        const bInf = (bd === Infinity || !Number.isFinite(bd));
+        if (aInf && !bInf) return 1;
+        if (!aInf && bInf) return -1;
+        if (!aInf && !bInf) return ad - bd;
+        return 0;
+      });
+
+      lastResults = availableDoctors;
+      renderResults(lastResults);
+
+      document.getElementById('exportBtn').disabled = (lastResults.length === 0);
+    }
+
+    function renderResults(results) {
+      const listContainer = document.getElementById('resultList');
+      listContainer.innerHTML = '';
+
+      const targetDay = document.getElementById('targetDay').value;
+      const selectedShifts = Array.from(document.querySelectorAll('input[name="targetShift"]:checked')).map(cb => cb.value);
+      const selectedShiftText = selectedShifts.join('、');
+      const fullDayRequested = (selectedShifts.length === 3 && selectedShifts.includes('早') && selectedShifts.includes('午') && selectedShifts.includes('晚'));
+
+      if (results.length === 0) {
+        listContainer.innerHTML = '<p style="text-align:center; color:#7b8a8f; padding:20px;">🎉 查無符合條件之醫師。</p>';
+        return;
+      }
+
+      results.forEach((res, index) => {
+        const li = document.createElement('li');
+        li.className = 'result-item';
+
+        let statusClass = 'status-3';
+        let primaryBadge = '';
+
+        if (fullDayRequested) {
+          if (res.surroundLevel === 3) { statusClass = 'status-1'; primaryBadge = '外圍最優：前一日整天空＋後一日整天空'; }
+          else if (res.surroundLevel === 2) { statusClass = 'status-2'; primaryBadge = '外圍次優：前一日晚空＋後一日早空'; }
+          else { statusClass = 'status-3'; primaryBadge = '外圍一般：僅確保當日全天可代診'; }
+        } else {
+          if (res.outsideEmptyCount >= 4) statusClass = 'status-1';
+          else if (res.outsideEmptyCount >= 2) statusClass = 'status-2';
+          else statusClass = 'status-3';
+          primaryBadge = res.outsideText;
+        }
+
+        li.innerHTML = `
+          <div class="rank-badge">${index + 1}</div>
+
+          <div class="doctor-info">
+            <div class="doctor-name">
+              ${res.name}
+              <span class="title-badge">${res.title}</span>
+              <span class="pill">${res.distanceText}</span>
+            </div>
+
+            <div class="details">執登院所：${res.regHospital}</div>
+            <div class="details">對照需代診：星期${targetDay}（${selectedShiftText}）→ ${res.requestedStatusText}</div>
+
+            <div class="details">${res.prevChipsHTML}</div>
+            <div class="details">${res.todayChipsHTML}</div>
+            <div class="details">${res.nextChipsHTML}</div>
+          </div>
+
+          <div class="right-col">
+            <div class="status-badge ${statusClass}">${primaryBadge}</div>
+
+            <div class="note-box">
+              <label>小備註</label>
+              <input class="note-input" type="text" placeholder="例如：已聯絡/待回覆/優先詢問..."
+                     value="${escapeHtml(res.note || '')}"
+                     oninput="updateDoctorNote(${index}, this.value)">
+            </div>
+          </div>
+        `;
+        listContainer.appendChild(li);
+      });
+    }
+
+    // =========================
+    // 匯出 Excel（含備註）
+    // =========================
+    function exportResultsToExcel(){
+      if (!lastResults || lastResults.length === 0) {
+        alert('目前沒有可匯出的名單，請先產生推薦名單。');
+        return;
+      }
+
+      const targetHosp = document.getElementById('targetHospital').value;
+      const targetDay = document.getElementById('targetDay').value;
+      const selectedShifts = Array.from(document.querySelectorAll('input[name="targetShift"]:checked')).map(cb => cb.value);
+      const shiftText = selectedShifts.join('、');
+      const fullDayRequested = (selectedShifts.length === 3 && selectedShifts.includes('早') && selectedShifts.includes('午') && selectedShifts.includes('晚'));
+
+      const aoa = [];
+      aoa.push([
+        '排序', '醫師姓名', '職稱', '執登院所', '距離(km)',
+        '需代診(星期/時段/院所)', '需代診時段狀態',
+        '判定重點', '前一日空忙', '當日空忙', '後一日空忙',
+        '小備註'
+      ]);
+
+      lastResults.forEach((r, i) => {
+        const distKm = (r.distance === Infinity || !Number.isFinite(r.distance)) ? '' : Number(r.distance.toFixed(1));
+        const keyPoint = fullDayRequested
+          ? (r.surroundLevel === 3 ? '外圍最優：前一日整天空＋後一日整天空'
+            : r.surroundLevel === 2 ? '外圍次優：前一日晚空＋後一日早空'
+            : '外圍一般：僅確保當日全天可代診')
+          : (r.outsideText || '');
+
+        aoa.push([
+          i + 1,
+          r.name,
+          r.title,
+          r.regHospital,
+          distKm,
+          `星期${targetDay}（${shiftText}）@${targetHosp}`,
+          r.requestedStatusText,
+          keyPoint,
+          stripHtml(r.prevChipsHTML),
+          stripHtml(r.todayChipsHTML),
+          stripHtml(r.nextChipsHTML),
+          r.note || ''
+        ]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = [
+        { wch: 6 }, { wch: 12 }, { wch: 10 }, { wch: 22 }, { wch: 10 },
+        { wch: 30 }, { wch: 22 },
+        { wch: 26 }, { wch: 18 }, { wch: 18 }, { wch: 18 },
+        { wch: 24 }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "推薦名單");
+
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth()+1).padStart(2,'0');
+      const d = String(now.getDate()).padStart(2,'0');
+      const filename = `代診推薦名單_${y}${m}${d}.xlsx`;
+
+      XLSX.writeFile(wb, filename);
+    }
+
+    // =========================
+    // 小工具
+    // =========================
+    function escapeHtml(s){
+      return String(s || '')
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#39;");
+    }
+
+    function stripHtml(html){
+      const div = document.createElement('div');
+      div.innerHTML = html || '';
+      return (div.textContent || div.innerText || '').replace(/\s+/g,' ').trim();
+    }
+  </script>
+</body>
+</html>
